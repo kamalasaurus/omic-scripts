@@ -1,0 +1,6 @@
+#!/bin/bash
+
+shopt -s expand_aliases
+alias diff-highlight="/opt/homebrew/opt/git/share/git-core/contrib/diff-highlight/diff-highlight"
+
+colordiff -u <(echo "$1") <(echo "$2") | diff-highlight
