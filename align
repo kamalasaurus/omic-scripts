@@ -74,6 +74,9 @@ aligned_seq1.chars.each_with_index do |char, i|
   if char == aligned_seq2[i]
     colorized_seq1 << "\e[31m#{char}\e[0m" # Red color
     colorized_seq2 << "\e[32m#{char}\e[0m" # Green color
+  elsif char == '-'
+    colorized_seq1 << "\e[30;43m#{char}\e[0m" # Black character, Orange background color
+    colorized_seq2 << "\e[30;43m#{aligned_seq2[i]}\e[0m" # Black character, Orange background color
   else
     colorized_seq1 << "\e[30;41m#{char}\e[0m" # Black character, Red background color
     colorized_seq2 << "\e[30;42m#{aligned_seq2[i]}\e[0m" # Black character, Green background color
@@ -82,4 +85,5 @@ end
 
 # Print colorized aligned sequences
 puts colorized_seq1
+puts "\n"
 puts colorized_seq2
