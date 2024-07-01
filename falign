@@ -1,0 +1,18 @@
+#!/usr/bin/ruby
+
+file_content = File.read(ARGV[0])
+
+fastas = file_content
+  .split('>').reject(&:empty?).map do |fasta|
+    lines = fasta.split("\n")
+    header = lines.first
+    sequence = lines.drop(1).join('')
+
+    name = header.split(/\s+/).first
+    [name, sequence]
+  end.to_h
+
+seq1 = fastas[ARGV[1]]
+seq2 = fastas[ARGV[2]]
+
+system("align \"#{seq1}\" \"#{seq2}\"")
