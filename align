@@ -1,0 +1,85 @@
+#!/usr/bin/ruby
+
+def needleman_wunsch(seq1, seq2, match_score = 1, mismatch_penalty = -1, gap_penalty = -2)
+  n = seq1.length
+  m = seq2.length
+
+  # Initialize scoring and direction matrices
+  score_matrix = Array.new(n+1) { Array.new(m+1) }
+  direction_matrix = Array.new(n+1) { Array.new(m+1) }
+
+  # Initialize first row and column
+  (0..n).each { |i| score_matrix[i][0] = i * gap_penalty }
+  (0..m).each { |j| score_matrix[0][j] = j * gap_penalty }
+
+  # Fill matrices
+  (1..n).each do |i|
+    (1..m).each do |j|
+      match = score_matrix[i-1][j-1] + (seq1[i-1] == seq2[j-1] ? match_score : mismatch_penalty)
+      delete = score_matrix[i-1][j] + gap_penalty
+      insert = score_matrix[i][j-1] + gap_penalty
+
+      score_matrix[i][j], direction_matrix[i][j] = [match, delete, insert].each_with_index.max
+    end
+  end
+
+  # Traceback
+  align1, align2 = "", ""
+  i, j = n, m
+  while i > 0 and j > 0
+    case direction_matrix[i][j]
+    when 0 # match/mismatch
+      align1 = seq1[i-1] + align1
+      align2 = seq2[j-1] + align2
+      i -= 1
+      j -= 1
+    when 1 # delete
+      align1 = seq1[i-1] + align1
+      align2 = "-" + align2
+      i -= 1
+    when 2 # insert
+      align1 = "-" + align1
+      align2 = seq2[j-1] + align2
+      j -= 1
+    end
+  end
+
+  # Fill the remaining sequence if any
+  while i > 0
+    align1 = seq1[i-1] + align1
+    align2 = "-" + align2
+    i -= 1
+  end
+  while j > 0
+    align1 = "-" + align1
+    align2 = seq2[j-1] + align2
+    j -= 1
+  end
+
+  return align1, align2
+end
+
+# Receive sequences from command line
+seq1 = ARGV[0]
+seq2 = ARGV[1]
+
+# Call needleman_wunsch function
+aligned_seq1, aligned_seq2 = needleman_wunsch(seq1, seq2)
+
+# Colorize characters that are different between the sequences
+colorized_seq1 = ""
+colorized_seq2 = ""
+
+aligned_seq1.chars.each_with_index do |char, i|
+  if char == aligned_seq2[i]
+    colorized_seq1 << "\e[31m#{char}\e[0m" # Red color
+    colorized_seq2 << "\e[32m#{char}\e[0m" # Green color
+  else
+    colorized_seq1 << "\e[30;41m#{char}\e[0m" # Black character, Red background color
+    colorized_seq2 << "\e[30;42m#{aligned_seq2[i]}\e[0m" # Black character, Green background color
+  end
+end
+
+# Print colorized aligned sequences
+puts colorized_seq1
+puts colorized_seq2
