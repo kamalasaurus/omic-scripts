@@ -86,6 +86,12 @@ aligned_seq1.chars.each_with_index do |char, i|
   end
 end
 
+colorized_seq1 << "\e[0m"
+colorized_seq1 << "\e[0m"
+# Reset background color
+colorized_seq1 << "\e[49m"
+colorized_seq2 << "\e[49m"
+
 # Print colorized aligned sequences
 puts colorized_seq1
 puts "\n"
