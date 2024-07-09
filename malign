@@ -3,7 +3,7 @@
 file_content = `grep -A1 #{ARGV[0]} #{ARGV[1]}`
 
 fastas = file_content
-  .split('>').reject(&:empty?).map.with_index do |fasta, i|
+  .split('>').reject(&:empty?).map.with_index(1) do |fasta, i|
     lines = fasta.split("\n")
     header = lines.first
     sequence = lines.drop(1).join('')
