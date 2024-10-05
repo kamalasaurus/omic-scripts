@@ -14,6 +14,6 @@ fastas = file_content
 
 fastas.keys.combination(2).each do |pair|
   puts pair.join(' ')
-  system("align \"#{fastas[pair[0]]}\" \"#{fastas[pair[1]]}\"")
+  system("align -a \"#{fastas[pair[0]]}\" -b \"#{fastas[pair[1]]}\"")
   puts "\n"
 end

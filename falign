@@ -15,4 +15,4 @@ fastas = file_content
 seq1 = fastas[ARGV[1]]
 seq2 = fastas[ARGV[2]]
 
-system("align \"#{seq1}\" \"#{seq2}\"")
+system("align -a \"#{seq1}\" -b \"#{seq2}\"")

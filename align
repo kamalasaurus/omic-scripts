@@ -1,6 +1,16 @@
 #!/usr/bin/ruby
 
-def needleman_wunsch(seq1, seq2, match_score = 1, mismatch_penalty = -1, gap_penalty = -2)
+require 'optparse'
+require 'json'
+
+def needleman_wunsch(
+  seq1:,
+  seq2:,
+  match_score: 1,
+  mismatch_penalty: -1,
+  gap_penalty: -2,
+  blosum_matrix: nil
+  )
   n = seq1.length
   m = seq2.length
 
@@ -15,7 +25,13 @@ def needleman_wunsch(seq1, seq2, match_score = 1, mismatch_penalty = -1, gap_pen
   # Fill matrices
   (1..n).each do |i|
     (1..m).each do |j|
-      match = score_matrix[i-1][j-1] + (seq1[i-1] == seq2[j-1] ? match_score : mismatch_penalty)
+      if blosum_matrix
+        match_score = blosum_matrix[seq1[i-1]][seq2[j-1]]
+      else
+        match_score = (seq1[i-1] == seq2[j-1] ? match_score : mismatch_penalty)
+      end
+
+      match = score_matrix[i-1][j-1] + match_score
       delete = score_matrix[i-1][j] + gap_penalty
       insert = score_matrix[i][j-1] + gap_penalty
 
@@ -26,30 +42,30 @@ def needleman_wunsch(seq1, seq2, match_score = 1, mismatch_penalty = -1, gap_pen
   # Traceback
   align1, align2 = "", ""
   i, j = n, m
+
   while i > 0 and j > 0
-    case direction_matrix[i][j]
-    when 0 # match/mismatch
+    if direction_matrix[i][j] == 0
       align1 = seq1[i-1] + align1
       align2 = seq2[j-1] + align2
       i -= 1
       j -= 1
-    when 1 # delete
+    elsif direction_matrix[i][j] == 1
       align1 = seq1[i-1] + align1
       align2 = "-" + align2
       i -= 1
-    when 2 # insert
+    else
       align1 = "-" + align1
       align2 = seq2[j-1] + align2
       j -= 1
     end
   end
 
-  # Fill the remaining sequence if any
   while i > 0
     align1 = seq1[i-1] + align1
     align2 = "-" + align2
     i -= 1
   end
+
   while j > 0
     align1 = "-" + align1
     align2 = seq2[j-1] + align2
@@ -59,12 +75,48 @@ def needleman_wunsch(seq1, seq2, match_score = 1, mismatch_penalty = -1, gap_pen
   return align1, align2
 end
 
-# Receive sequences from command line
-seq1 = ARGV[0]
-seq2 = ARGV[1]
+# Define options hash to store flag values
+options = {}
+
+# Create OptionParser object
+OptionParser.new do |opts|
+  opts.banner = "Usage: align.rb [options]"
+
+  opts.on("-a", "--seq1 SEQUENCE1", "First sequence") do |seq1|
+    options[:seq1] = seq1
+  end
+
+  opts.on("-b", "--seq2 SEQUENCE2", "Second sequence") do |seq2|
+    options[:seq2] = seq2
+  end
+
+  opts.on("-p", "--protein BLOSUM{NUM}", "Use protein scoring matrix") do |blosum_num|
+    puts blosum_num
+    options[:protein] = blosum_num
+  end
+
+  opts.on("-h", "--help", "Prints this help") do
+    puts opts
+    exit
+  end
+end.parse(ARGV)
+
+# Assign sequences from options hash
+seq1 = options[:seq1]
+seq2 = options[:seq2]
+
+# Read in BLOSUM matrix if protein flag is set
+if (options[:protein])
+  blosum_num = options[:protein]
+  blosum_matrix = JSON.parse(File.read("blosum_matrices/BLOSUM#{blosum_num}.json"))
+end
 
 # Call needleman_wunsch function
-aligned_seq1, aligned_seq2 = needleman_wunsch(seq1, seq2)
+if (options[:protein])
+  aligned_seq1, aligned_seq2 = needleman_wunsch(seq1: seq1, seq2: seq2, blosum_matrix: blosum_matrix)
+else
+  aligned_seq1, aligned_seq2 = needleman_wunsch(seq1: seq1, seq2: seq2)
+end
 
 # Colorize characters that are different between the sequences
 colorized_seq1 = ""
