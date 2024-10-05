@@ -105,10 +105,17 @@ end.parse(ARGV)
 seq1 = options[:seq1]
 seq2 = options[:seq2]
 
+script_dir = File.expand_path(File.dirname(__FILE__))
 # Read in BLOSUM matrix if protein flag is set
 if (options[:protein])
   blosum_num = options[:protein]
-  blosum_matrix = JSON.parse(File.read("blosum_matrices/BLOSUM#{blosum_num}.json"))
+  blosum_matrix_path = File.join(script_dir, "blosum_matrices", "BLOSUM#{blosum_num}.json")
+  if File.exist?(blosum_matrix_path)
+    blosum_matrix = JSON.parse(File.read(blosum_matrix_path))
+  else
+    puts "BLOSUM matrix file not found: #{blosum_matrix_path}"
+    exit
+  end
 end
 
 # Call needleman_wunsch function
