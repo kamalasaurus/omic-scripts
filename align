@@ -91,7 +91,6 @@ OptionParser.new do |opts|
   end
 
   opts.on("-p", "--protein BLOSUM{NUM}", "Use protein scoring matrix") do |blosum_num|
-    puts blosum_num
     options[:protein] = blosum_num
   end
 
