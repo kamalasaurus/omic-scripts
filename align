@@ -18,42 +18,60 @@ def needleman_wunsch(
   score_matrix = Array.new(n+1) { Array.new(m+1) }
   direction_matrix = Array.new(n+1) { Array.new(m+1) }
 
-  # Initialize first row and column
-  (0..n).each { |i| score_matrix[i][0] = i * gap_penalty }
-  (0..m).each { |j| score_matrix[0][j] = j * gap_penalty }
+  # Adjust initialization to give free gap at beginning for the shorter sequence
+  if n > m
+    # seq2 is shorter: free gaps for seq2
+    (0..n).each { |i| score_matrix[i][0] = i * gap_penalty }
+    (0..m).each { |j| score_matrix[0][j] = 0 }
+  elsif m > n
+    # seq1 is shorter: free gaps for seq1
+    (0..n).each { |i| score_matrix[i][0] = 0 }
+    (0..m).each { |j| score_matrix[0][j] = j * gap_penalty }
+  else
+    # Equal length: use standard initialization
+    (0..n).each { |i| score_matrix[i][0] = i * gap_penalty }
+    (0..m).each { |j| score_matrix[0][j] = j * gap_penalty }
+  end
 
   # Fill matrices
   (1..n).each do |i|
     (1..m).each do |j|
       if blosum_matrix
-        match_score = blosum_matrix[seq1[i-1]][seq2[j-1]]
+        match = score_matrix[i-1][j-1] + blosum_matrix[seq1[i-1]][seq2[j-1]]
       else
-        match_score = (seq1[i-1] == seq2[j-1] ? match_score : mismatch_penalty)
+        match = score_matrix[i-1][j-1] + (seq1[i-1] == seq2[j-1] ? match_score : mismatch_penalty)
       end
-
-      match = score_matrix[i-1][j-1] + match_score
       delete = score_matrix[i-1][j] + gap_penalty
       insert = score_matrix[i][j-1] + gap_penalty
+      score_matrix[i][j] = [match, delete, insert].max
 
-      score_matrix[i][j], direction_matrix[i][j] = [match, delete, insert].each_with_index.max
+      if score_matrix[i][j] == match
+        direction_matrix[i][j] = "diag"
+      elsif score_matrix[i][j] == delete
+        direction_matrix[i][j] = "up"
+      else
+        direction_matrix[i][j] = "left"
+      end
     end
   end
 
-  # Traceback
-  align1, align2 = "", ""
-  i, j = n, m
-
-  while i > 0 and j > 0
-    if direction_matrix[i][j] == 0
+  # Traceback.
+  align1 = ""
+  align2 = ""
+  i = n
+  j = m
+  while i > 0 && j > 0
+    case direction_matrix[i][j]
+    when "diag"
       align1 = seq1[i-1] + align1
       align2 = seq2[j-1] + align2
       i -= 1
       j -= 1
-    elsif direction_matrix[i][j] == 1
+    when "up"
       align1 = seq1[i-1] + align1
       align2 = "-" + align2
       i -= 1
-    else
+    when "left"
       align1 = "-" + align1
       align2 = seq2[j-1] + align2
       j -= 1
