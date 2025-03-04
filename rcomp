@@ -1,0 +1,20 @@
+#!/usr/bin/ruby
+
+input = ARGV[0]
+
+output = input.split('').map do |char|
+  case char
+  when 'T', 't', 'U', 'u'
+    'A'
+  when 'A', 'a'
+    'T'
+  when 'G', 'g'
+    'C'
+  when 'C', 'c'
+    'G'
+  else
+    char
+  end
+end.join.reverse
+
+puts output
