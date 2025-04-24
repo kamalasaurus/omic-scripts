@@ -1,0 +1,3 @@
+#!/Users/kamal/.asdf/shims/ruby
+
+`fpalign \"#{ARGV[0]}\" \"#{ARGV[1]}\" \"#{ARGV[2]}\" | ansi2html > \"#{ARGV[0]}.html\"`

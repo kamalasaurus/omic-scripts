@@ -1,0 +1,3 @@
+#!/bin/bash
+
+align -a "$1" -b "$2" -p 80

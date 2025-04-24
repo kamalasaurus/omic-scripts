@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+
+msa = File.read(ARGV[0])
+start = ARGV[1].to_i
+term = ARGV[2].to_i
+
+comp_fasta = msa.split('>').reject(&:empty?).map.with_index(1) do |fasta, i|
+  lines = fasta.split("\n")
+  header = lines.first
+  sequence = lines.drop(1).join('')
+
+  name = header.split(/\s+/).first
+  [name, sequence]
+end
+  .map do |name, sequence|
+    ">#{name}\n#{sequence[start..term]}"
+end.join("\n")
+
+File.write("#{ARGV[0].split('.').first}_fragment.fasta", comp_fasta)

@@ -1,0 +1,27 @@
+#!/Users/kamal/.asdf/shims/ruby
+
+require 'pry'
+
+basename = File.basename(ARGV[0])
+
+fastas = File.read(ARGV[0])
+  .split('>').reject(&:empty?).map.with_index(1) do |fasta, i|
+    lines = fasta.split("\n")
+    header = lines.first
+    sequence = lines.drop(1).join('')
+
+    # this is a temporary fix for non-codon aware aligners
+    trim = 0
+    sequence.match(/^-+/) do |m|
+      trim = m.to_s.length % 3
+    end
+
+    sequence = sequence[trim..-1] if trim > 0
+
+    protein_sequence = `d2p #{sequence}`.strip
+  
+    name = header.split(/\s+/).first
+    [name, protein_sequence]
+  end.to_h
+
+File.write("#{basename.split('.').first}_protein.fasta", fastas.map { |k, v| ">#{k}\n#{v}" }.join("\n"))

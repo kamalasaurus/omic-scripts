@@ -1,0 +1,53 @@
+#!/usr/bin/ruby
+
+dna = if ARGV[0] && !ARGV[0].empty?
+  ARGV[0]
+elsif !STDIN.tty?
+  STDIN.read.chomp
+else
+  ""
+end
+
+def translate_dna(dna)
+  genetic_code = {
+    "TTT" => "F", "TTC" => "F", "TTA" => "L", "TTG" => "L",
+    "TCT" => "S", "TCC" => "S", "TCA" => "S", "TCG" => "S",
+    "TAT" => "Y", "TAC" => "Y", "TAA" => "*", "TAG" => "*",
+    "TGT" => "C", "TGC" => "C", "TGA" => "*", "TGG" => "W",
+    "CTT" => "L", "CTC" => "L", "CTA" => "L", "CTG" => "L",
+    "CCT" => "P", "CCC" => "P", "CCA" => "P", "CCG" => "P",
+    "CAT" => "H", "CAC" => "H", "CAA" => "Q", "CAG" => "Q",
+    "CGT" => "R", "CGC" => "R", "CGA" => "R", "CGG" => "R",
+    "ATT" => "I", "ATC" => "I", "ATA" => "I", "ATG" => "M",
+    "ACT" => "T", "ACC" => "T", "ACA" => "T", "ACG" => "T",
+    "AAT" => "N", "AAC" => "N", "AAA" => "K", "AAG" => "K",
+    "AGT" => "S", "AGC" => "S", "AGA" => "R", "AGG" => "R",
+    "GTT" => "V", "GTC" => "V", "GTA" => "V", "GTG" => "V",
+    "GCT" => "A", "GCC" => "A", "GCA" => "A", "GCG" => "A",
+    "GAT" => "D", "GAC" => "D", "GAA" => "E", "GAG" => "E",
+    "GGT" => "G", "GGC" => "G", "GGA" => "G", "GGG" => "G",
+    "---" => "-"
+  }
+  orfs = ['', '', '']
+  # Translate one codon at a time.
+  3.times do |orf|
+    3.times do |i|
+      (orf...dna.length).step(3) do |j|
+          codon = dna[j,3].upcase
+          break if codon.length < 3
+          aa = genetic_code[codon] || "X"
+          # break if aa == "*"  # stop translation at stop codon
+          if aa == "*"
+            aa = ''
+          end
+          orfs[orf] << aa
+      end
+    end
+  end
+  colors = ["\e[38;5;37m", "\e[38;5;208m", "\e[35m"]
+  orfs.each_with_index do |orf, i|
+    orfs[i] = colors[i] + orf + "\e[0m"
+  end.join("\n")
+end
+
+puts translate_dna(dna)

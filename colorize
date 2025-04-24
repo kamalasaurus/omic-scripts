@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+aligned_seq1 = ARGV[0]
+aligned_seq2 = ARGV[1]
+
+colorized_seq1 = ""
+colorized_seq2 = ""
+distance = 0
+
+aligned_seq1.chars.each_with_index do |char, i|
+  if char == aligned_seq2[i]
+    colorized_seq1 << "\e[31m#{char}\e[0m" # Red color
+    colorized_seq2 << "\e[32m#{char}\e[0m" # Green color
+  elsif char == '-'
+    colorized_seq1 << "\e[30;43m#{char}\e[0m" # Black character, Orange background color
+    colorized_seq2 << "\e[30;43m#{aligned_seq2[i]}\e[0m" # Black character, Orange background color
+    distance += 1
+  elsif aligned_seq2[i] == '-'
+    colorized_seq1 << "\e[30;45m#{char}\e[0m" # Black character, Violet background color
+    colorized_seq2 << "\e[30;45m#{aligned_seq2[i]}\e[0m" # Black character, Violet background color
+    distance += 1
+  else
+    colorized_seq1 << "\e[30;41m#{char}\e[0m" # Black character, Red background color
+    colorized_seq2 << "\e[30;42m#{aligned_seq2[i]}\e[0m" # Black character, Green background color
+    distance += 1
+  end
+end
+
+# Print colorized aligned sequences
+puts colorized_seq1
+puts "\n"
+puts colorized_seq2
+puts "Conserved: #{colorized_seq1.scan("\e[31m").count} \
+Insertions: #{colorized_seq1.scan("-").count} \
+Deletions: #{colorized_seq2.scan("-").count} \
+Mismatches: #{colorized_seq1.scan("\e[30;41m").count} \
+Distance: #{distance / aligned_seq1.length.to_f}"

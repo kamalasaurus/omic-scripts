@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+
+require 'pry'
+
+# this expects aligned inputs -- not standard sequences
+
+comparator = `grep -A1 \"#{ARGV[0]}\" #{ARGV[1]}`
+comp_name = comparator.split("\n").first
+comp_seq = comparator.split("\n").drop(1).join('')
+
+fastas = File.read(ARGV[2])
+  .split('>').reject(&:empty?).map.with_index(1) do |fasta, i|
+    lines = fasta.split("\n")
+    header = lines.first
+    sequence = lines.drop(1).join('')
+
+    name = header.split(/\s+/).first
+    [name, sequence]
+  end.to_h
+
+fastas.each do |name, sequence|
+  puts "#{comp_name} #{name}"
+  system("colorize \"#{comp_seq}\" \"#{sequence}\"")
+  puts "\n"
+end

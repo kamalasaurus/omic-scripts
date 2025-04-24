@@ -1,0 +1,4 @@
+#!/usr/bin/ruby
+
+flag = ARGV.delete("-p") ? "-p 80" : ""
+system("align -a \"#{ARGV[0]}\" -b \"#{ARGV[1]}\" #{flag}")
