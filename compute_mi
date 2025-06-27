@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+"""
+compute_mi.py
+
+Compute raw and APC-corrected Mutual Information (MI) between two protein
+Multiple Sequence Alignments (MSAs) that share the same sequence order.
+
+Usage:
+    python compute_mi.py \
+      --msa1 <nlr_alignment.fa> \
+      --msa2 <partner_alignment.fa> \
+      --out_raw <mi_raw.txt> \
+      --out_apc <mi_apc.txt> \
+      [--smoothing <pseudocount>]
+"""
+
+import math
+import argparse
+from Bio import AlignIO
+import numpy as np
+
+def calculate_raw_mi_matrix(msa1, msa2, smoothing_count=1.0):
+    """
+    Calculate the raw Mutual Information (MI) matrix between two MSAs.
+
+    Parameters:
+      msa1 (MultipleSeqAlignment): First alignment (e.g., NLRs)
+      msa2 (MultipleSeqAlignment): Second alignment (candidate partners)
+      smoothing_count (float): Pseudocount for smoothing joint frequencies
+
+    Returns:
+      raw_mi_matrix (np.ndarray): MI values, shape = (cols_msa1, cols_msa2)
+    """
+    amino_acid_states = list("ACDEFGHIKLMNPQRSTVWY")
+    num_seqs = len(msa1)
+    cols_msa1 = msa1.get_alignment_length()
+    cols_msa2 = msa2.get_alignment_length()
+    raw_mi_matrix = np.zeros((cols_msa1, cols_msa2), dtype=float)
+
+    for col1 in range(cols_msa1):
+        # Single-site frequencies in msa1 at col1
+        residues1 = [rec.seq[col1] for rec in msa1 if rec.seq[col1] != '-']
+        count1 = len(residues1)
+        if count1 == 0:
+            continue
+        freq1 = {aa: residues1.count(aa)/count1 for aa in amino_acid_states}
+
+        for col2 in range(cols_msa2):
+            # Single-site frequencies in msa2 at col2
+            residues2 = [rec.seq[col2] for rec in msa2 if rec.seq[col2] != '-']
+            count2 = len(residues2)
+            if count2 == 0:
+                continue
+            freq2 = {aa: residues2.count(aa)/count2 for aa in amino_acid_states}
+
+            # Joint counts across paired sequences
+            joint_counts = {(a,b):0 for a in amino_acid_states for b in amino_acid_states}
+            joint_total = 0
+            for idx in range(num_seqs):
+                r1 = msa1[idx].seq[col1]
+                r2 = msa2[idx].seq[col2]
+                if r1 == '-' or r2 == '-':
+                    continue
+                if r1 in amino_acid_states and r2 in amino_acid_states:
+                    joint_counts[(r1,r2)] += 1
+                    joint_total += 1
+            if joint_total == 0:
+                continue
+
+            # Convert to joint probabilities with pseudocount smoothing
+            S = len(amino_acid_states)
+            joint_probs = {
+                (a,b): (joint_counts[(a,b)] + smoothing_count) /
+                       (joint_total + smoothing_count * S * S)
+                for a in amino_acid_states for b in amino_acid_states
+            }
+
+            # Recompute marginals from joint distribution
+            freq1_joint = {a: sum(joint_probs[(a,b)] for b in amino_acid_states)
+                           for a in amino_acid_states}
+            freq2_joint = {b: sum(joint_probs[(a,b)] for a in amino_acid_states)
+                           for b in amino_acid_states}
+
+            # Compute MI for (col1, col2)
+            mi_val = 0.0
+            for a in amino_acid_states:
+                for b in amino_acid_states:
+                    p_ab = joint_probs[(a,b)]
+                    if p_ab <= 0:
+                        continue
+                    mi_val += p_ab * math.log(p_ab / (freq1_joint[a] * freq2_joint[b]), 2)
+            raw_mi_matrix[col1, col2] = mi_val
+
+    return raw_mi_matrix
+
+def apply_average_product_correction(mi_matrix):
+    """
+    Apply Average Product Correction (APC) to reduce background bias.
+
+    Parameters:
+      mi_matrix (np.ndarray): Raw MI matrix
+
+    Returns:
+      corrected_mi (np.ndarray): APC-corrected MI matrix
+    """
+    row_mean = mi_matrix.mean(axis=1, keepdims=True)
+    col_mean = mi_matrix.mean(axis=0, keepdims=True)
+    global_mean = mi_matrix.mean()
+    apc_term = (row_mean * col_mean) / global_mean
+    return mi_matrix - apc_term
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Compute raw and APC-corrected MI between two protein MSAs"
+    )
+    parser.add_argument("--msa1",    required=True, help="First MSA FASTA")
+    parser.add_argument("--msa2",    required=True, help="Second MSA FASTA")
+    parser.add_argument("--out_raw", required=True, help="Output raw MI matrix")
+    parser.add_argument("--out_apc", required=True, help="Output APC-corrected MI")
+    parser.add_argument(
+        "--smoothing", type=float, default=1.0,
+        help="Pseudocount smoothing (default: 1.0)"
+    )
+    args = parser.parse_args()
+
+    # Read alignments
+    alignment1 = AlignIO.read(args.msa1, "fasta")
+    alignment2 = AlignIO.read(args.msa2, "fasta")
+    if len(alignment1) != len(alignment2):
+        parser.error("MSAs must have the same number of sequences in identical order")
+
+    print("Calculating raw MI matrix...")
+    raw_mi = calculate_raw_mi_matrix(alignment1, alignment2, smoothing_count=args.smoothing)
+
+    print("Applying APC correction...")
+    apc_mi = apply_average_product_correction(raw_mi)
+
+    # Save outputs
+    np.savetxt(args.out_raw, raw_mi, fmt="%.6f", delimiter="\t")
+    print(f"Saved raw MI to {args.out_raw}")
+    np.savetxt(args.out_apc, apc_mi, fmt="%.6f", delimiter="\t")
+    print(f"Saved APC-corrected MI to {args.out_apc}")
+
+if __name__ == "__main__":
+    main()
