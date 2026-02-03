@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+
+require 'csv'
+
+# Get the directory where the script is located
+SCRIPT_DIR = File.dirname(__FILE__)
+DATA_FILE = File.join(SCRIPT_DIR, 'AGI2uniprot.txt')
+
+# read in ./AGI2uniprot.txt
+# format: locus.number<space>uniprot_id-number
+# e.g. AT1G01010.1 Q9S7B6-1
+locus2gene = {}
+CSV.foreach(DATA_FILE, col_sep: "\t") do |row|
+  # strip off the .number and -number
+  locus = row[0].split('.').first
+  gene = row[1].split('-').first
+  locus2gene[locus] = gene
+end
+
+# Process command line arguments first
+ARGV.each do |locus|
+  puts locus2gene[locus] if locus2gene.key?(locus)
+end
+
+# If stdin is not empty, process it line by line
+if !ARGV.empty?
+  ARGF.skip  # Skip processing ARGV as files if we already handled them as arguments
+else
+  ARGF.each_line do |line|
+    locus = line.strip
+    puts locus2gene[locus] if locus2gene.key?(locus)
+  end
+end

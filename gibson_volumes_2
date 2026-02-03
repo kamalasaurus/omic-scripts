@@ -1,0 +1,20 @@
+#!/Users/kamal/.asdf/shims/ruby
+
+to_pmol = lambda { |nM| nM / 1000 }
+concentrations = ARGV.map(&:to_f)
+max_concentration = concentrations.max
+pmols = concentrations.map(&to_pmol)
+# 1 : 1 ratios
+ratios = concentrations.map { |c| max_concentration / c }
+# 1 : 2 ratio
+ratios_2 = ratios.first > ratios.last ?
+  [ratios.first / 2, ratios.last] :
+  [ratios.first, ratios.last * 2]
+
+water_volume = 10 - ratios_2.reduce(:+)
+ratios_2.each_with_index { |r, i| puts "insert #{i + 1}: #{'%.2f' % r} ul" }
+puts "h20: #{'%.2f' % water_volume} ul"
+
+total_pmols = ratios_2.map.with_index { |r, i| r * pmols[i] }.reduce(:+)
+puts "total dna: #{'%.2f' % total_pmols} pmols"
+puts "5ul dna: #{'%.2f' % (total_pmols / 2)} pmols"
