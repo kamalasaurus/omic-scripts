@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+input_gff3=$1
+base=$(basename "$input_gff3")
+output_bed="${base}.bed"
+
+ggrep -P "\tgene\t" $input_gff3 \
+  | awk 'BEGIN{OFS="\t"}{print $1, $4-1, $5, $9}' \
+  > $output_bed
