@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+input=$1
+base=$(basename $input)
+output="$base.sorted.bed""
+
+sort -k1,1 -k2,2n $input > TAIR10_genes.sorted.bed
